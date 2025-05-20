@@ -149,17 +149,25 @@ def fetch_articles(region_tag, query, page, limit):
     return r.json()
 
 # --- 6) 검색/중지 제어 버튼 ---
-col_start, col_stop = st.columns([1,1])
-with col_start:
-    if st.button("🔎 검색 시작"):
+with st.form('search form'):
+    col_start, col_stop = st.columns([1,1])
+    with col_start:
+        start = st.form_submit_button("🔎 검색 시작")
+    with col_stop:
+        stop = st.form_submit_button("🛑 검색 중지")
+
+    # 사용자가 start 누르면 is_searching 켜고, stop 누르면 끄기
+    if start:
         st.session_state.is_searching = True
         st.session_state.stop_search = False
-with col_stop:
-    if st.button("🛑 검색 중지"):
+    if stop:
         st.session_state.stop_search = True
 
 # --- 7) 검색 실행 & 점진적 렌더링 ---
 if st.session_state.is_searching:
+    # 항상 빈 df_mid 정의
+    df_mid = pd.DataFrame()
+    
     # 대상 지역 리스트 구성
     if mode == "전국 검색":
         regions_to_search = (
