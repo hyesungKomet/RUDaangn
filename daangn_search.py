@@ -167,7 +167,7 @@ with st.form('search form'):
 if st.session_state.is_searching:
     # 항상 빈 df_mid 정의
     df_mid = pd.DataFrame()
-    
+
     # 대상 지역 리스트 구성
     if mode == "전국 검색":
         regions_to_search = (
@@ -189,103 +189,103 @@ if st.session_state.is_searching:
     # is_cloud = "STREAMLIT_APP_NAME" in os.environ
     total = len(regions_to_search)
 
-    if parallel:
-        # 로컬: 병렬 처리
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            future_map = {
-                executor.submit(
-                    fetch_articles,
-                    f"{rname}-{rcode}", item, page, per_page
-                ): (full, rname)
-                for full, rname, rcode in regions_to_search
-            }
-            done = 0
-            for future in as_completed(future_map):
-                if st.session_state.stop_search:
-                    break
-                full, rname = future_map[future]
-                data = future.result()
-                arts = data.get("allPage", {}).get("fleamarketArticles", [])
-                for art in arts:
-                    created = pd.to_datetime(art["createdAt"])
-                    if cutoff and created < cutoff:
-                        continue
-                    txt = (art["title"] + " " + art["content"]).lower()
-                    if keywords and not all(kw in txt for kw in keywords):
-                        continue
-                    try:
-                        price = int(float(art["price"]))
-                    except:
-                        price = None
-                    sold = art.get("status", "").lower() == "closed"
-                    if only_available and sold:
-                        continue
-                    if max_price > 0 and price is not None and price > max_price:
-                        continue
-                    if price is not None and price < min_price:
-                        continue
-                    all_rows.append({
-                        "주소": full,
-                        "동/읍/면": rname,
-                        "제목": art["title"],
-                        "가격": price,
-                        "등록시간": created,
-                        "판매자": art["user"]["nickname"],
-                        "판매완료": "예" if sold else "아니오",
-                        "링크": art["href"],
-                        "썸네일": art.get("thumbnail")
-                    })
-                done += 1
-                progress.progress(done / total)
-                df_mid = (
-                    pd.DataFrame(all_rows)
-                    .drop_duplicates(subset=["링크"])  
-                    .reset_index(drop=True)
-                )
-                result_container.dataframe(df_mid, use_container_width=True)
-    else:
-        # 서버(Cloud): 순차 처리
-        for idx, (full, rname, rcode) in enumerate(regions_to_search):
-            if st.session_state.stop_search:
-                break
-            data = fetch_articles(f"{rname}-{rcode}", item, page, per_page)
-            arts = data.get("allPage", {}).get("fleamarketArticles", [])
-            for art in arts:
-                created = pd.to_datetime(art["createdAt"])
-                if cutoff and created < cutoff:
-                    continue
-                txt = (art["title"] + " " + art["content"]).lower()
-                if keywords and not all(kw in txt for kw in keywords):
-                    continue
-                try:
-                    price = int(float(art["price"]))
-                except:
-                    price = None
-                sold = art.get("status", "").lower() == "closed"
-                if only_available and sold:
-                    continue
-                if max_price > 0 and price is not None and price > max_price:
-                    continue
-                if price is not None and price < min_price:
-                    continue
-                all_rows.append({
-                    "주소": full,
-                    "동/읍/면": rname,
-                    "제목": art["title"],
-                    "가격": price,
-                    "등록시간": created,
-                    "판매자": art["user"]["nickname"],
-                    "판매완료": "예" if sold else "아니오",
-                    "링크": art["href"],
-                    "썸네일": art.get("thumbnail")
-                })
-            progress.progress((idx + 1) / total)
-            df_mid = (
-                pd.DataFrame(all_rows)
-                .drop_duplicates(subset=["링크"])  
-                .reset_index(drop=True)
-            )
-            result_container.dataframe(df_mid, use_container_width=True)
+    # if parallel:
+    #     # 로컬: 병렬 처리
+    #     with ThreadPoolExecutor(max_workers=10) as executor:
+    #         future_map = {
+    #             executor.submit(
+    #                 fetch_articles,
+    #                 f"{rname}-{rcode}", item, page, per_page
+    #             ): (full, rname)
+    #             for full, rname, rcode in regions_to_search
+    #         }
+    #         done = 0
+    #         for future in as_completed(future_map):
+    #             if st.session_state.stop_search:
+    #                 break
+    #             full, rname = future_map[future]
+    #             data = future.result()
+    #             arts = data.get("allPage", {}).get("fleamarketArticles", [])
+    #             for art in arts:
+    #                 created = pd.to_datetime(art["createdAt"])
+    #                 if cutoff and created < cutoff:
+    #                     continue
+    #                 txt = (art["title"] + " " + art["content"]).lower()
+    #                 if keywords and not all(kw in txt for kw in keywords):
+    #                     continue
+    #                 try:
+    #                     price = int(float(art["price"]))
+    #                 except:
+    #                     price = None
+    #                 sold = art.get("status", "").lower() == "closed"
+    #                 if only_available and sold:
+    #                     continue
+    #                 if max_price > 0 and price is not None and price > max_price:
+    #                     continue
+    #                 if price is not None and price < min_price:
+    #                     continue
+    #                 all_rows.append({
+    #                     "주소": full,
+    #                     "동/읍/면": rname,
+    #                     "제목": art["title"],
+    #                     "가격": price,
+    #                     "등록시간": created,
+    #                     "판매자": art["user"]["nickname"],
+    #                     "판매완료": "예" if sold else "아니오",
+    #                     "링크": art["href"],
+    #                     "썸네일": art.get("thumbnail")
+    #                 })
+    #             done += 1
+    #             progress.progress(done / total)
+    #             df_mid = (
+    #                 pd.DataFrame(all_rows)
+    #                 .drop_duplicates(subset=["링크"])  
+    #                 .reset_index(drop=True)
+    #             )
+    #             result_container.dataframe(df_mid, use_container_width=True)
+    # else:
+    # 서버(Cloud): 순차 처리
+    for idx, (full, rname, rcode) in enumerate(regions_to_search):
+        if st.session_state.stop_search:
+            break
+        data = fetch_articles(f"{rname}-{rcode}", item, page, per_page)
+        arts = data.get("allPage", {}).get("fleamarketArticles", [])
+        for art in arts:
+            created = pd.to_datetime(art["createdAt"])
+            if cutoff and created < cutoff:
+                continue
+            txt = (art["title"] + " " + art["content"]).lower()
+            if keywords and not all(kw in txt for kw in keywords):
+                continue
+            try:
+                price = int(float(art["price"]))
+            except:
+                price = None
+            sold = art.get("status", "").lower() == "closed"
+            if only_available and sold:
+                continue
+            if max_price > 0 and price is not None and price > max_price:
+                continue
+            if price is not None and price < min_price:
+                continue
+            all_rows.append({
+                "주소": full,
+                "동/읍/면": rname,
+                "제목": art["title"],
+                "가격": price,
+                "등록시간": created,
+                "판매자": art["user"]["nickname"],
+                "판매완료": "예" if sold else "아니오",
+                "링크": art["href"],
+                "썸네일": art.get("thumbnail")
+            })
+        progress.progress((idx + 1) / total)
+        df_mid = (
+            pd.DataFrame(all_rows)
+            .drop_duplicates(subset=["링크"])  
+            .reset_index(drop=True)
+        )
+        result_container.dataframe(df_mid, use_container_width=True)
 
     st.session_state.is_searching = False
     st.session_state.results_df = df_mid
@@ -313,3 +313,10 @@ if not df_final.empty:
                     st.markdown(f"- 👤 {rec['판매자']} | 판매완료: {rec['판매완료']}")
                     st.markdown(f"[🔗 상세보기]({rec['링크']})")
                     st.markdown("---")
+
+    # 고정 테이블 한 번만 렌더링
+    elif mode == "전국 검색":
+        st.dataframe(
+            df_final.drop(columns=["썸네일","코드"], errors="ignore"),
+            use_container_width=True
+        )
