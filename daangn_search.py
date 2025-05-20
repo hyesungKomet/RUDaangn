@@ -39,10 +39,17 @@ def load_regions():
 regions_df, MAJORS = load_regions()
 
 # --- 2) 검색 파라미터 UI ---
-row1_col1, row1_col2 = st.columns([1, 6])
+row1_col1, row1_col2, row1_col3 = st.columns([1, 1, 4])
 with row1_col1:
     mode = st.radio("🔎 모드", ["전국 검색", "지역 검색"], index=1, horizontal=True)
 with row1_col2:
+    # --- UI: 병렬 검색 옵션 추가 ---
+    parallel = st.checkbox(
+        "빠른 검색 사용",
+        value=False,
+        help="아직 실험중..."
+    )
+with row1_col3:
     item = st.text_input("찾을 물품 (ex: 노트북)", "")
 
 row2_cols = st.columns([3, 2, 1, 1, 1])
@@ -171,10 +178,10 @@ if st.session_state.is_searching:
     all_rows = []
     progress = st.progress(0)
     result_container = st.empty()
-    is_cloud = "STREAMLIT_APP_NAME" in os.environ
+    # is_cloud = "STREAMLIT_APP_NAME" in os.environ
     total = len(regions_to_search)
 
-    if not is_cloud:
+    if parallel:
         # 로컬: 병렬 처리
         with ThreadPoolExecutor(max_workers=10) as executor:
             future_map = {
